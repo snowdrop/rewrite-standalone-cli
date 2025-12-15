@@ -474,13 +474,14 @@ public class RewriteCommand implements Runnable {
 
             // Create the JavaParser and set the classpaths
             JavaParser.Builder<? extends JavaParser, ?> javaParserBuilder = JavaParser.fromJavaVersion()
-                .styles(styles).logCompilationWarningsAndErrors(true);
+                .styles(styles).logCompilationWarningsAndErrors(false);
             JavaTypeCache typeCache = new JavaTypeCache();
             javaParserBuilder.classpath(classPaths).typeCache(typeCache);
+            //javaParserBuilder.classpath("spring-boot").typeCache(typeCache);
 
             // Load the Java source files
-            JavaParser javaParser = javaParserBuilder.build();
-            sourceFiles.addAll(javaParser.parse(javaFiles, projectRoot, ctx).collect(toList()));
+            JavaParser jp = javaParserBuilder.build();
+            sourceFiles.addAll(jp.parse(javaFiles, projectRoot, ctx).collect(toList()));
             System.out.println("Parsed " + javaFiles.size() + " Java files");
         }
 

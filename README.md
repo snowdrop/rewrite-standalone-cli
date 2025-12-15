@@ -11,7 +11,7 @@ Compile the project and run `quarkus:dev`
 mvn quarkus:dev -Dquarkus.args="test-project/simple org.openrewrite.java.format.AutoFormat"
 mvn quarkus:dev -Dquarkus.args="test-project/simple dummy"
 
-mvn quarkus:dev -Dquarkus.args="test-project/demo-spring-boot-todo-app org.openrewrite.java.search.FindAnnotations --jar=org.springframework.boot:spring-boot-starter-web:3.5.8"
+mvn quarkus:dev -Dquarkus.args="test-project/demo-spring-boot-todo-app org.openrewrite.java.search.FindAnnotations"
 
 mvn quarkus:dev -Dquarkus.args="test-project/demo-spring-boot-todo-app org.openrewrite.java.search.FindAnnotations --jar=org.springframework.boot:spring-boot-autoconfigure:3.5.8,org.springframework.boot:spring-boot-starter-web:3.5.8"
 
