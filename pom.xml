@@ -26,9 +26,9 @@
         <openrewrite-recipe-bom.version>3.15.0</openrewrite-recipe-bom.version>
 
         <maven.version>3.9.11</maven.version>
-        <maven-resolver.version>2.0.13</maven-resolver.version>
-        <maven-resolver-http.version>1.9.25</maven-resolver-http.version>
-        <eclipse-sisu-plexus.version>0.9.0.M3</eclipse-sisu-plexus.version>
+        <maven-resolver-supplier.version>1.9.24</maven-resolver-supplier.version>
+
+        <argLine>--add-opens java.base/java.lang.reflect=ALL-UNNAMED</argLine>
     </properties>
 
     <dependencyManagement>
@@ -55,10 +55,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-picocli</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -131,45 +133,22 @@
             <artifactId>maven-model</artifactId>
             <version>${maven.version}</version>
         </dependency>
+        <!--        <dependency>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-embedder</artifactId>
+                    <version>${maven.version}</version>
+                </dependency>-->
+
+        <!-- Maven Resolver dependencies - explicit versions needed -->
         <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-embedder</artifactId>
-            <version>${maven.version}</version>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-supplier</artifactId>
+            <version>${maven-resolver-supplier.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.maven.resolver</groupId>
             <artifactId>maven-resolver-impl</artifactId>
-            <version>${maven-resolver.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-connector-basic</artifactId>
-            <version>${maven-resolver.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-transport-http</artifactId>
-            <version>${maven-resolver-http.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-transport-file</artifactId>
-            <version>${maven-resolver.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-resolver-provider</artifactId>
-            <version>3.9.6</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-embedder</artifactId>
-            <version>${maven.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.sisu</groupId>
-            <artifactId>org.eclipse.sisu.plexus</artifactId>
-            <version>${eclipse-sisu-plexus.version}</version>
+            <version>${maven-resolver-supplier.version}</version>
         </dependency>
 
         <!-- Application to scan -->
@@ -186,10 +165,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-impl</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

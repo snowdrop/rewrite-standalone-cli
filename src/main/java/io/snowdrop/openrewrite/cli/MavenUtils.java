@@ -2,31 +2,16 @@ package io.snowdrop.openrewrite.cli;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
-import org.apache.maven.artifact.handler.DefaultArtifactHandler;
+//import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.*;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
-import org.eclipse.aether.impl.DefaultServiceLocator;
-import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
-import org.eclipse.aether.spi.connector.transport.TransporterFactory;
-import org.eclipse.aether.transport.http.HttpTransporterFactory;
-import org.eclipse.aether.transport.file.FileTransporterFactory;
-import org.eclipse.aether.impl.ArtifactDescriptorReader;
-import org.eclipse.aether.impl.DependencyCollector;
-import org.eclipse.aether.impl.VersionResolver;
-import org.eclipse.aether.impl.VersionRangeResolver;
-import org.eclipse.aether.impl.ArtifactResolver;
-import org.apache.maven.repository.internal.DefaultArtifactDescriptorReader;
-import org.apache.maven.repository.internal.DefaultVersionResolver;
-import org.apache.maven.repository.internal.DefaultVersionRangeResolver;
-import org.eclipse.aether.internal.impl.DefaultArtifactResolver;
-import org.eclipse.aether.internal.impl.collect.DefaultDependencyCollector;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.supplier.RepositorySystemSupplier;
 import org.jboss.logging.Logger;
 
 import java.io.File;
@@ -69,7 +54,7 @@ public class MavenUtils {
     public static Set<Artifact> convertDependenciesToArtifacts(List<Dependency> dependencies) {
         return dependencies.stream()
             .map(dep -> {
-                return new DefaultArtifact(dep.getGroupId(),dep.getArtifactId(),dep.getVersion(),dep.getScope(),dep.getType(),dep.getClassifier(),new DefaultArtifactHandler(dep.getType()));
+                return new DefaultArtifact(dep.getGroupId(),dep.getArtifactId(),dep.getVersion(),dep.getScope(),dep.getType(),dep.getClassifier(),null);
             })
             .filter(java.util.Objects::nonNull)
             .collect(Collectors.toSet());
@@ -133,32 +118,12 @@ public class MavenUtils {
     /**
      * Creates a properly configured RepositorySystem with all required Maven components.
      * This method can be used by other classes to get consistent repository system configuration.
+     * Using manual setup to avoid class loader conflicts in Quarkus.
      *
      * @return properly wired RepositorySystem
      */
     public static RepositorySystem createRepositorySystem() {
-        // Create service locator with all required Maven repository components
-        DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
-
-        // Add transport and connector services
-        locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
-        locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
-        locator.addService(TransporterFactory.class, FileTransporterFactory.class);
-
-        // Add Maven-specific services for artifact and dependency resolution
-        locator.addService(DependencyCollector.class, DefaultDependencyCollector.class);
-        locator.addService(ArtifactResolver.class, DefaultArtifactResolver.class);
-
-        // Add error handling for debugging
-        locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
-            @Override
-            public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
-                logger.error("Failed to create service: " + type.getName() + " with impl: " + impl.getName());
-                exception.printStackTrace();
-            }
-        });
-
-        return locator.getService(RepositorySystem.class);
+        return new RepositorySystemSupplier().get();
     }
 
     /**
