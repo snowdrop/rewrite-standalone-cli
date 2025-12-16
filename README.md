@@ -10,11 +10,6 @@ mvn quarkus:dev -Dquarkus.args="test-project/simple org.openrewrite.java.format.
 mvn quarkus:dev -Dquarkus.args="test-project/demo-spring-boot-todo-app org.openrewrite.java.search.FindAnnotations"
 ```
 
-> *TODO*
-> Load the Recipe's class from the FQName and instantiate the object
-> Pass the parameters to the Recipe object initialized (class introspection, etc.)
-> Load the recipe(s) from an external jar file
-
 ## Trick for the developers
 
 ```shell
