@@ -16,7 +16,7 @@ mvn quarkus:dev -Dquarkus.args="test-project/demo-spring-boot-todo-app org.openr
 ```
 
 > [!NOTE]
-> You can also run the application using jar file and command: `java -jar test-project/simple org.openrewrite.java.format.AutoFormat`
+> You can also run the application using the uber jar file and command: `java -jar test-project/simple org.openrewrite.java.format.AutoFormat`
 
 > [!TIP]
 > Trick for the developers
@@ -27,6 +27,11 @@ set qrun java -jar target/quarkus-app/quarkus-run.jar
 
 $qdebug test-project/demo-spring-boot-todo-app org.openrewrite.java.search.FindAnnotations
 $qrun test-project/demo-spring-boot-todo-app org.openrewrite.java.search.FindAnnotations
+```
+
+The command lone application also supports to load the recipes from an external jar file using the Maven GAV coordinates
+```shell
+mvn quarkus:dev -Dquarkus.args="--jar dev.snowdrop:openrewrite-recipes:1.0.0-SNAPSHOT test-project/demo-spring-boot-todo-app dev.snowdrop.openrewrite.java.search.FindAnnotations pattern=@org.springframework.boot.autoconfigure.SpringBootApplication,matchId=1234"
 ```
 
 ## Issue

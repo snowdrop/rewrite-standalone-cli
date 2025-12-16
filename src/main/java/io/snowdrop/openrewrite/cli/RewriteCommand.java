@@ -30,7 +30,6 @@ import org.openrewrite.java.internal.JavaTypeCache;
 import org.openrewrite.java.marker.JavaProject;
 import org.openrewrite.java.marker.JavaSourceSet;
 import org.openrewrite.java.marker.JavaVersion;
-import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.kotlin.KotlinParser;
 import org.openrewrite.marker.BuildTool;
 import org.openrewrite.marker.Marker;
