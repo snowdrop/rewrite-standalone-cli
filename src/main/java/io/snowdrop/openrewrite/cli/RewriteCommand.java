@@ -20,6 +20,8 @@ import jakarta.inject.Inject;
 import org.apache.maven.model.Model;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.config.CompositeRecipe;
+import org.openrewrite.config.DeclarativeRecipe;
 import org.openrewrite.config.Environment;
 import org.openrewrite.config.YamlResourceLoader;
 import org.openrewrite.internal.InMemoryLargeSourceSet;
@@ -44,6 +46,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -85,10 +88,18 @@ public class RewriteCommand implements Runnable {
     Path projectRoot;
 
     @CommandLine.Parameters(
-        index = "1..*",
-        description = "Active recipes to run (e.g., org.openrewrite.java.format.AutoFormat)"
+        index = "1",
+        description = "Active recipe to run (e.g., org.openrewrite.java.format.AutoFormat)"
     )
-    Set<String> activeRecipes = new HashSet<>();
+    //Set<String> activeRecipes = new HashSet<>();
+    String activeRecipe;
+
+    @CommandLine.Parameters(
+        index = "2",
+        description = "Options of the recipe to be used to set the recipe's object fields. Example: annotationPattern=@SpringBootApplication",
+        split = ","
+    )
+    LinkedHashSet<String> recipeOptions;
 
     @CommandLine.Option(
         names = {"--jar"},
@@ -164,7 +175,7 @@ public class RewriteCommand implements Runnable {
     public void execute() throws Exception {
         System.out.println("Starting OpenRewrite dry-run...");
         System.out.println("Project root: " + projectRoot.toAbsolutePath());
-        System.out.println("Active recipes: " + activeRecipes);
+        System.out.println("Active recipe: " + activeRecipe);
 
         if (!additionalJarPaths.isEmpty()) {
             System.out.println("Additional JAR files: " + additionalJarPaths);
@@ -272,14 +283,23 @@ public class RewriteCommand implements Runnable {
     }
 
     private ResultsContainer listResults(ExecutionContext ctx) throws Exception {
-        System.out.println("Using active recipe(s): " + activeRecipes);
+        System.out.println("Using active recipe(s): " + activeRecipe);
 
-        if (activeRecipes.isEmpty()) {
+        if (activeRecipe.isEmpty()) {
             return new ResultsContainer(projectRoot, emptyList());
         }
 
         Environment env = createEnvironment();
-        Recipe recipe = new FindAnnotations("@org.springframework.boot.autoconfigure.SpringBootApplication",false);
+
+        // This code works when we instantiate directly the Recipe class as the jar packaging it is loaded by the application
+        // Recipe recipe = new FindAnnotations("@org.springframework.boot.autoconfigure.SpringBootApplication",false);
+
+        // The recipe class is created using the Resource classloader using the FQName
+        Recipe recipe = env.activateRecipes(activeRecipe);
+
+        // The Recipe class has been instantiated from the FQName string but the fields/parameters still need to be set
+        //Set<String> options = Collections.singleton("annotationPattern=@org.springframework.boot.autoconfigure.SpringBootApplication");
+        configureRecipeOptions(recipe, recipeOptions);
 
         if ("org.openrewrite.Recipe$Noop".equals(recipe.getName())) {
             System.err.println("No recipes were activated. " +
@@ -685,5 +705,71 @@ public class RewriteCommand implements Runnable {
         constructor.setAccessible(true);
         Object instance = constructor.newInstance();
         return (Recipe) instance;
+    }
+
+    private static void configureRecipeOptions(Recipe recipe, Set<String> options) throws RuntimeException {
+        if (recipe instanceof CompositeRecipe ||
+            recipe instanceof DeclarativeRecipe ||
+            recipe instanceof Recipe.DelegatingRecipe ||
+            !recipe.getRecipeList().isEmpty()) {
+            // We don't (yet) support configuring potentially nested recipes, as recipes might occur more than once,
+            // and setting the same value twice might lead to unexpected behavior.
+            throw new RuntimeException(
+                "Recipes containing other recipes can not be configured from the command line: " + recipe);
+        }
+
+        Map<String, String> optionValues = new HashMap<>();
+        for (String option : options) {
+            String[] parts = option.split("=", 2);
+            if (parts.length == 2) {
+                optionValues.put(parts[0], parts[1]);
+            }
+        }
+        for (Field field : recipe.getClass().getDeclaredFields()) {
+            String removed = optionValues.remove(field.getName());
+            updateOption(recipe, field, removed);
+        }
+        if (!optionValues.isEmpty()) {
+            throw new RuntimeException(
+                String.format("Unknown recipe options: %s", String.join(", ", optionValues.keySet())));
+        }
+    }
+
+    private static void updateOption(Recipe recipe, Field field, @Nullable String optionValue) throws RuntimeException {
+        Object convertedOptionValue = convertOptionValue(field.getName(), optionValue, field.getType());
+        if (convertedOptionValue == null) {
+            return;
+        }
+        try {
+            field.setAccessible(true);
+            field.set(recipe, convertedOptionValue);
+            field.setAccessible(false);
+        } catch (IllegalArgumentException | IllegalAccessException e) {
+            throw new RuntimeException(
+                String.format("Unable to configure recipe '%s' option '%s' with value '%s'",
+                    recipe.getClass().getSimpleName(), field.getName(), optionValue));
+        }
+    }
+
+    private static @Nullable Object convertOptionValue(String name, @Nullable String optionValue, Class<?> type)
+        throws RuntimeException {
+        if (optionValue == null) {
+            return null;
+        }
+        if (type.isAssignableFrom(String.class)) {
+            return optionValue;
+        }
+        if (type.isAssignableFrom(boolean.class) || type.isAssignableFrom(Boolean.class)) {
+            return Boolean.parseBoolean(optionValue);
+        }
+        if (type.isAssignableFrom(int.class) || type.isAssignableFrom(Integer.class)) {
+            return Integer.parseInt(optionValue);
+        }
+        if (type.isAssignableFrom(long.class) || type.isAssignableFrom(Long.class)) {
+            return Long.parseLong(optionValue);
+        }
+
+        throw new RuntimeException(
+            String.format("Unable to convert option: %s value: %s to type: %s", name, optionValue, type));
     }
 }

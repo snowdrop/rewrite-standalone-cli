@@ -3,14 +3,23 @@
 Prerequisite:
 - JDK 21 and maven 3.9
 
-Compile the project and run `quarkus:dev`
+Compile the project and launch the Quarkus Picocli client using the command: `mvn quarkus:dev`
 
 ```shell
 mvn quarkus:dev -Dquarkus.args="test-project/simple org.openrewrite.java.format.AutoFormat"
-mvn quarkus:dev -Dquarkus.args="test-project/demo-spring-boot-todo-app org.openrewrite.java.search.FindAnnotations"
 ```
 
-## Trick for the developers
+If the recipe can be configured using options (= java class fields), then declare them using the format `key=value`. Multiple options can be provided as a comma-separated list
+
+```shell
+mvn quarkus:dev -Dquarkus.args="test-project/demo-spring-boot-todo-app org.openrewrite.java.search.FindAnnotations annotationPattern=@org.springframework.boot.autoconfigure.SpringBootApplication,matchMetaAnnotations=false"
+```
+
+> [!NOTE]
+> You can also run the application using jar file and command: `java -jar test-project/simple org.openrewrite.java.format.AutoFormat`
+
+> [!TIP]
+> Trick for the developers
 
 ```shell
 set qdebug java -jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address="*:5005" target/quarkus-app/quarkus-run.jar

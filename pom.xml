@@ -141,15 +141,6 @@
             <version>${maven-resolver-supplier.version}</version>
         </dependency>
 
-        <!-- Application to scan -->
-        <!--
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-autoconfigure</artifactId>
-            <version>3.5.8</version>
-        </dependency>
-        -->
-
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
