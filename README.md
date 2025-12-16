@@ -2,7 +2,8 @@
 
 This project support to execute an Openrewrite Recipe without the need to use the maven goal `rewrite:dryrun or rewrite:run`
 
-## Prerequisite:
+## Prerequisite
+
 - JDK 21 
 - Apache maven 3.9
 
