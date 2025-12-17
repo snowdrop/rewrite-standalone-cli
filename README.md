@@ -13,17 +13,22 @@ Git clone this project compile the project. Next launch the Quarkus Picocli clie
 
 ```shell
 mvn clean install
-mvn quarkus:dev -Dquarkus.args="test-project/simple org.openrewrite.java.format.AutoFormat"
+mvn quarkus:dev -Dquarkus.args="test-project/simple -r org.openrewrite.java.format.AutoFormat"
 ```
 
 If the recipe can be configured using options (= java class fields), then declare them using the format `key=value`. Multiple options can be provided as a comma-separated list
 
 ```shell
-mvn quarkus:dev -Dquarkus.args="test-project/demo-spring-boot-todo-app org.openrewrite.java.search.FindAnnotations annotationPattern=@org.springframework.boot.autoconfigure.SpringBootApplication,matchMetaAnnotations=false"
+mvn quarkus:dev -Dquarkus.args="test-project/demo-spring-boot-todo-app -r org.openrewrite.java.search.FindAnnotations -o annotationPattern=@org.springframework.boot.autoconfigure.SpringBootApplication,matchMetaAnnotations=false"
+```
+
+Alternatively, you can use a YAML recipes file and pass it using the parameter `-c`:
+```shell
+mvn quarkus:dev -Dquarkus.args="test-project/demo-spring-boot-todo-app -c rewrite.yml
 ```
 
 > [!NOTE]
-> You can also run the application using the uber jar file and command: `java -jar test-project/simple org.openrewrite.java.format.AutoFormat`
+> You can also run the application using the uber jar file and command: `java -jar test-project/simple -r org.openrewrite.java.format.AutoFormat`
 
 > [!TIP]
 > Trick for the developers
@@ -32,13 +37,13 @@ mvn quarkus:dev -Dquarkus.args="test-project/demo-spring-boot-todo-app org.openr
 set qdebug java -jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address="*:5005" target/quarkus-app/quarkus-run.jar
 set qrun java -jar target/quarkus-app/quarkus-run.jar
 
-$qdebug test-project/demo-spring-boot-todo-app org.openrewrite.java.search.FindAnnotations
-$qrun test-project/demo-spring-boot-todo-app org.openrewrite.java.search.FindAnnotations
+$qdebug test-project/demo-spring-boot-todo-app -r org.openrewrite.java.search.FindAnnotations
+$qrun test-project/demo-spring-boot-todo-app -r org.openrewrite.java.search.FindAnnotations
 ```
 
 The command lone application also supports to load the recipes from an external jar file using the Maven GAV coordinates
 ```shell
-mvn quarkus:dev -Dquarkus.args="--jar dev.snowdrop:openrewrite-recipes:1.0.0-SNAPSHOT test-project/demo-spring-boot-todo-app search.java.dev.snowdrop.mtool.openrewrite.FindAnnotations pattern=@org.springframework.boot.autoconfigure.SpringBootApplication,matchId=1234"
+mvn quarkus:dev -Dquarkus.args="--jar dev.snowdrop:openrewrite-recipes:1.0.0-SNAPSHOT test-project/demo-spring-boot-todo-app -r search.java.dev.snowdrop.mtool.openrewrite.FindAnnotations -o pattern=@org.springframework.boot.autoconfigure.SpringBootApplication,matchId=1234"
 ```
 
 Enjoy :-)

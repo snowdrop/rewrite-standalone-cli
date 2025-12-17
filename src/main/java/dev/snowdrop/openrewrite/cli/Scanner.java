@@ -1,15 +1,13 @@
 package dev.snowdrop.openrewrite.cli;
 
 import dev.snowdrop.openrewrite.cli.model.Config;
+import dev.snowdrop.openrewrite.cli.model.ResultsContainer;
 import dev.snowdrop.openrewrite.cli.toolbox.MavenArtifactResolver;
 import dev.snowdrop.openrewrite.cli.toolbox.MavenUtils;
 import org.apache.maven.model.Model;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.config.CompositeRecipe;
-import org.openrewrite.config.DeclarativeRecipe;
-import org.openrewrite.config.Environment;
-import org.openrewrite.config.YamlResourceLoader;
+import org.openrewrite.config.*;
 import org.openrewrite.internal.InMemoryLargeSourceSet;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.internal.JavaTypeCache;
@@ -50,17 +48,32 @@ import static org.openrewrite.Tree.randomId;
 
 public class Scanner {
 
+    private ExecutionContext ctx;
+    private List<Throwable> throwables;
+    private Environment env;
+    private LargeSourceSet sourceSet;
     private Config config;
 
     public Scanner(Config cfg) {
         this.config = cfg;
+        init();
+    }
+
+    private void init() {
+        throwables = new ArrayList<>();
+        ctx = createExecutionContext(throwables);
+
+        try {
+            env = createEnvironment();
+            sourceSet = loadSourceSet(env, ctx);
+        } catch (Exception ex) {
+            System.err.println("Error while initializing");
+            ex.printStackTrace(System.err);
+        }
     }
 
     public void run() throws Exception {
-        List<Throwable> throwables = new ArrayList<>();
-        ExecutionContext ctx = createExecutionContext(throwables);
-
-        ResultsContainer results = listResults(ctx);
+        ResultsContainer results = listResults();
 
         RuntimeException firstException = results.getFirstException();
         if (firstException != null) {
@@ -78,7 +91,7 @@ public class Scanner {
         if (results.isNotEmpty()) {
             Duration estimateTimeSaved = Duration.ZERO;
 
-            for (Result result : results.generated) {
+            for (Result result : results.getGenerated()) {
                 assert result.getAfter() != null;
                 System.err.println("These recipes would generate a new file " +
                     result.getAfter().getSourcePath() + ":");
@@ -87,7 +100,7 @@ public class Scanner {
                     result.getTimeSavings() : Duration.ZERO);
             }
 
-            for (Result result : results.deleted) {
+            for (Result result : results.getDeleted()) {
                 assert result.getBefore() != null;
                 System.err.println("These recipes would delete a file " +
                     result.getBefore().getSourcePath() + ":");
@@ -96,7 +109,7 @@ public class Scanner {
                     result.getTimeSavings() : Duration.ZERO);
             }
 
-            for (Result result : results.moved) {
+            for (Result result : results.getMoved()) {
                 assert result.getBefore() != null;
                 assert result.getAfter() != null;
                 System.err.println("These recipes would move a file from " +
@@ -107,7 +120,7 @@ public class Scanner {
                     result.getTimeSavings() : Duration.ZERO);
             }
 
-            for (Result result : results.refactoredInPlace) {
+            for (Result result : results.getRefactoredInPlace()) {
                 assert result.getBefore() != null;
                 System.err.println("These recipes would make changes to " +
                     result.getBefore().getSourcePath() + ":");
@@ -127,8 +140,8 @@ public class Scanner {
             Path patchFile = outPath.resolve("rewrite.patch");
             try (BufferedWriter writer = Files.newBufferedWriter(patchFile)) {
                 Stream.concat(
-                        Stream.concat(results.generated.stream(), results.deleted.stream()),
-                        Stream.concat(results.moved.stream(), results.refactoredInPlace.stream())
+                        Stream.concat(results.getGenerated().stream(), results.getDeleted().stream()),
+                        Stream.concat(results.getMoved().stream(), results.getRefactoredInPlace().stream())
                     )
                     .map(Result::diff)
                     .forEach(diff -> {
@@ -158,23 +171,32 @@ public class Scanner {
         });
     }
 
-    private ResultsContainer listResults(ExecutionContext ctx) throws Exception {
+    private ResultsContainer listResults() {
+        // 1. Process YAML recipes if they exist
+        if (!config.getYamlRecipes().isEmpty()) {
+            env = loadRecipesFromYAML(env);
+        }
+
         // TODO: To be reviewed to process a list of recipes
         String activeRecipe = config.getActiveRecipes().getFirst();
 
-        System.out.println("Using active recipe(s): " + activeRecipe);
+        // 2. Check if we have at least one source of recipes
+        boolean hasActiveRecipe = activeRecipe != null && !activeRecipe.isEmpty();
+        boolean hasYamlRecipes = !config.getYamlRecipes().isEmpty();
 
-        if (activeRecipe.isEmpty()) {
-            return new ResultsContainer(config.getAppPath(), emptyList());
+        // 3. Early return only if BOTH sources are empty
+        if (!hasActiveRecipe && !hasYamlRecipes) {
+            System.out.printf("No recipes found in active selection or YAML configuration for path: %s\n", config.getAppPath());
+            return new ResultsContainer(Collections.emptyList());
         }
 
-        Environment env = createEnvironment();
+        System.out.println("Using active recipe(s): " + activeRecipe);
 
         // This code works when we instantiate directly the Recipe class as the jar packaging it is loaded by the application
         // Recipe recipe = new FindAnnotations("@org.springframework.boot.autoconfigure.SpringBootApplication",false);
 
         // The recipe class is created using the Resource classloader using the FQName
-        Recipe recipe = env.activateRecipes(activeRecipe);
+        Recipe recipe = env.activateRecipes(getActiveRecipes());
 
         // The Recipe class has been instantiated from the FQName string but the fields/parameters still need to be set
         // Set<String> options = Collections.singleton("annotationPattern=@org.springframework.boot.autoconfigure.SpringBootApplication");
@@ -185,7 +207,7 @@ public class Scanner {
         if ("org.openrewrite.Recipe$Noop".equals(recipe.getName())) {
             System.err.println("No recipes were activated. " +
                 "Activate a recipe by providing it as a command line argument.");
-            return new ResultsContainer(config.getAppPath(), emptyList());
+            return new ResultsContainer(emptyList());
         }
 
         System.out.println("Validating active recipes...");
@@ -204,8 +226,7 @@ public class Scanner {
                 "Execution will continue regardless.");
         }
 
-        LargeSourceSet sourceSet = loadSourceSet(env, ctx);
-        RecipeRun recipeRun = runRecipe(recipe, sourceSet, ctx);
+        RecipeRun recipeRun = runRecipe(recipe);
 
         // The DataTable<SearchResult> will be available starting from: 8.69.0 !
         /*
@@ -226,14 +247,14 @@ public class Scanner {
         }
         */
 
-        return new ResultsContainer(config.getAppPath(), recipeRun.getChangeset().getAllResults());
+        return new ResultsContainer(recipeRun.getChangeset().getAllResults());
     }
 
-    /**
-     * Strips version information from JAR URLs for comparison.
-     */
-    private String stripVersion(URL jarUrl) {
-        return jarUrl.toString().replaceAll("/[^/]+/[^/]+\\.jar", "");
+    private Iterable<String> getActiveRecipes() {
+        return env.listRecipes()
+            .stream()
+            .map(Recipe::getName)
+            .toList();
     }
 
     private Environment createEnvironment() throws Exception {
@@ -245,21 +266,20 @@ public class Scanner {
         if (additionalJarsClassloader != null) {
             // Load recipes using the ClasspathScanningLoader with the additional classloader
             // This is the key fix - we use the additionalJarsClassloader for recipe discovery
-            env.load(new org.openrewrite.config.ClasspathScanningLoader(new Properties(), additionalJarsClassloader));
+            env.load(new ClasspathScanningLoader(new Properties(), additionalJarsClassloader));
             merge(getClass().getClassLoader(), additionalJarsClassloader);
             System.out.println("Loaded recipes from additional JARs");
         }
 
-        // Scan runtime classpath and user home
-        env.scanRuntimeClasspath().scanUserHome();
+        return env.build();
+    }
 
-        // Load the YAML configuration file if it exists from the project to scan
+    private Environment loadRecipesFromYAML(Environment env) {
+        Environment.Builder envBuilder = env.builder();
         Path configPath;
         if (Paths.get(config.getYamlRecipes()).isAbsolute()) {
-            // Use absolute path directly
             configPath = Paths.get(config.getYamlRecipes());
         } else {
-            // Check for APP_PROJECT environment variable first
             String appProject = System.getenv("APP_PROJECT");
             if (appProject != null && !appProject.isEmpty()) {
                 configPath = Paths.get(appProject);
@@ -271,11 +291,13 @@ public class Scanner {
 
         if (Files.exists(configPath)) {
             try (InputStream is = Files.newInputStream(configPath)) {
-                env.load(new YamlResourceLoader(is, configPath.toUri(), new Properties()));
+                envBuilder.load(new YamlResourceLoader(is, configPath.toUri(), new Properties()));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
 
-        return env.build();
+        return envBuilder.build();
     }
 
     private LargeSourceSet loadSourceSet(Environment env, ExecutionContext ctx) throws Exception {
@@ -339,15 +361,17 @@ public class Scanner {
         return new InMemoryLargeSourceSet(sourceFiles);
     }
 
-    private RecipeRun runRecipe(Recipe recipe, LargeSourceSet sourceSet, ExecutionContext ctx) {
+    private RecipeRun runRecipe(Recipe recipe) {
         System.out.println("Running recipe(s)...");
         RecipeRun rr = recipe.run(sourceSet, ctx);
+
         if (config.canExportDatatables()) {
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS"));
             Path datatableDirectoryPath = config.getAppPath().resolve("target").resolve("rewrite").resolve("datatables").resolve(timestamp);
             System.out.println("Printing available datatables to: " + datatableDirectoryPath);
             rr.exportDatatablesToCsv(datatableDirectoryPath, ctx);
         }
+
         return rr;
     }
 
@@ -472,45 +496,6 @@ public class Scanner {
             "**/*.txt",
             "**/*.py"
         ));
-    }
-
-    // Inner class to represent results container (simplified version)
-    public static class ResultsContainer {
-        final Path projectRoot;
-        final List<Result> generated = new ArrayList<>();
-        final List<Result> deleted = new ArrayList<>();
-        final List<Result> moved = new ArrayList<>();
-        final List<Result> refactoredInPlace = new ArrayList<>();
-
-        public ResultsContainer(Path projectRoot, Collection<Result> results) {
-            this.projectRoot = projectRoot;
-            for (Result result : results) {
-                if (result.getBefore() == null && result.getAfter() == null) {
-                    continue;
-                }
-                if (result.getBefore() == null && result.getAfter() != null) {
-                    generated.add(result);
-                } else if (result.getBefore() != null && result.getAfter() == null) {
-                    deleted.add(result);
-                } else if (result.getBefore() != null && result.getAfter() != null &&
-                    !result.getBefore().getSourcePath().equals(result.getAfter().getSourcePath())) {
-                    moved.add(result);
-                } else {
-                    if (!result.diff(Paths.get("")).isEmpty()) {
-                        refactoredInPlace.add(result);
-                    }
-                }
-            }
-        }
-
-        public @Nullable RuntimeException getFirstException() {
-            // Simplified version - in the full implementation this would check for recipe errors
-            return null;
-        }
-
-        public boolean isNotEmpty() {
-            return !generated.isEmpty() || !deleted.isEmpty() || !moved.isEmpty() || !refactoredInPlace.isEmpty();
-        }
     }
 
     public static Recipe createRecipeInstance(String fqn)
@@ -648,7 +633,7 @@ public class Scanner {
         // ClasspathScanningLoader with the additional classloader, we don't need
         // to merge URLs into the runtime classloader. Just log the additional JARs.
 
-        if (!(targetClassLoader instanceof URLClassLoader)) {
+        if (!(targetClassLoader instanceof URLClassLoader targetUrlClassLoader)) {
             System.out.println("Running in Quarkus mode - using ClasspathScanningLoader for additional JARs:");
             for (URL newUrl : sourceClassLoader.getURLs()) {
                 System.out.println("  Using JAR from additional classpath: " + newUrl);
@@ -656,7 +641,6 @@ public class Scanner {
             return;
         }
 
-        URLClassLoader targetUrlClassLoader = (URLClassLoader) targetClassLoader;
         Set<String> existingVersionlessJars = new HashSet<>();
 
         for (URL existingUrl : targetUrlClassLoader.getURLs()) {
@@ -670,6 +654,13 @@ public class Scanner {
                 System.out.println("Would add JAR to classpath: " + newUrl);
             }
         }
+    }
+
+    /**
+     * Strips version information from JAR URLs for comparison.
+     */
+    private String stripVersion(URL jarUrl) {
+        return jarUrl.toString().replaceAll("/[^/]+/[^/]+\\.jar", "");
     }
 
 

@@ -1,0 +1,9 @@
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.yourorg.FindExample
+displayName: Find text example
+recipeList:
+  - org.openrewrite.text.Find:
+      find: GetMapping
+      filePattern: '**/*.java'
+      contextSize: 50

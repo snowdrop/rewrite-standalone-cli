@@ -88,16 +88,18 @@ public class RewriteCommand implements Runnable {
     )
     Path projectRoot;
 
-    @CommandLine.Parameters(
-        index = "1",
-        description = "Active recipe to run (e.g., org.openrewrite.java.format.AutoFormat)"
+    @CommandLine.Option(
+        names = {"-r,--recipes"},
+        description = "Active recipe to run (e.g., org.openrewrite.java.format.AutoFormat)",
+        required = false
     )
     String activeRecipe;
 
-    @CommandLine.Parameters(
-        index = "2",
+    @CommandLine.Option(
+        names= {"-o, --options"},
         description = "Options of the recipe to be used to set the recipe's object fields. Example: annotationPattern=@SpringBootApplication",
-        split = ","
+        split = ",",
+        required = false
     )
     LinkedHashSet<String> recipeOptions;
 
@@ -178,7 +180,7 @@ public class RewriteCommand implements Runnable {
         Config cfg = new Config();
         cfg.setAppPath(projectRoot);
         cfg.setAdditionalJarPaths(additionalJarPaths);
-        cfg.setActiveRecipes(List.of(activeRecipe));
+        cfg.setActiveRecipes(Arrays.asList(activeRecipe));
         cfg.setRecipeOptions(recipeOptions);
         cfg.setYamlRecipes(configLocation);
         cfg.setExportDatatables(exportDatatables);
