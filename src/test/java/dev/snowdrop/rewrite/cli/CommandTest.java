@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CommandTest {
 
     @Test
-    void testExecuteWithConfig() throws Exception {
+    void testAutoFormatRecipe() throws Exception {
         RewriteCommand rewriteCmd = new RewriteCommand();
 
         String appPath = "test-project/simple";
