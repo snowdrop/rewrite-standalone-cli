@@ -105,6 +105,12 @@ public class RewriteCommand implements Runnable {
     )
     int sizeThresholdMb = 10;
 
+    @CommandLine.Option(
+        names = {"-D"},
+        description = "Log the rewrite messages post execution of the recipes"
+    )
+    boolean logMessages = false;
+
     // Inject Quarkus configuration properties
     @Inject
     RewriteConfiguration config;
@@ -174,6 +180,7 @@ public class RewriteCommand implements Runnable {
         cfg.setExportDatatables(exportDatatables);
         cfg.setExclusions(exclusions);
         cfg.setPlainTextMasks(plainTextMasks);
+        cfg.setLogMessages(logMessages);
 
         return runScanner(cfg);
     }

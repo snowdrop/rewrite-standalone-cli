@@ -70,8 +70,9 @@ public class Scanner {
 
     public ResultsContainer run() throws Exception {
         ResultsContainer results = listResults();
-        // TODO: Add a debug option
-        showResults(results);
+        if(config.isLogMessages()) {
+            showResults(results);
+        }
         return results;
     }
 

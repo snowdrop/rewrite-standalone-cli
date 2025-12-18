@@ -14,6 +14,7 @@ public class Config {
     private Set<String> exclusions;
     private Set<String> plainTextMasks;
     private Set<String> recipeOptions;
+    private boolean logMessages;
 
     public Path getAppPath() {
         return appPath;
@@ -85,5 +86,17 @@ public class Config {
 
     public void setRecipeOptions(Set<String> recipeOptions) {
         this.recipeOptions = recipeOptions;
+    }
+
+    public Boolean getExportDatatables() {
+        return exportDatatables;
+    }
+
+    public boolean isLogMessages() {
+        return logMessages;
+    }
+
+    public void setLogMessages(boolean logMessages) {
+        this.logMessages = logMessages;
     }
 }

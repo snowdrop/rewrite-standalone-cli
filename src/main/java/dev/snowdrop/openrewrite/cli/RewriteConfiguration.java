@@ -40,6 +40,12 @@ public interface RewriteConfiguration {
     String configLocation();
 
     /**
+     * Boolean to log the rewrite messages post execution of the recipes
+     * Can be overridden with REWRITE_LOG_MESSAGES environment variable.
+     */
+    boolean logMessages();
+
+    /**
      * Size threshold in MB for large files.
      * Can be overridden with REWRITE_SIZE_THRESHOLD_MB environment variable.
      */
