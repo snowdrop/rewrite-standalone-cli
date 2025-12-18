@@ -225,25 +225,6 @@ public class Scanner {
             });
         }
 
-        // The DataTable<SearchResult> will be available starting from: 8.69.0 !
-        /*
-        Map<DataTable<?>, List<?>> searchResults = recipeRun.getDataTables();
-        if (searchResults != null) {
-            searchResults.forEach((result, list) -> {
-                if (result.getClass().getSimpleName().startsWith("SearchResults")) {
-                    System.out.println("# Found " + list.size() + " search results.");
-                    list.stream().forEach(r -> {
-                        var row = (SearchResults.Row)r;
-                        System.out.println("# SourcePath: " + row.getSourcePath());
-                        System.out.println("# Result: " + row.getResult());
-                        System.out.println("# Recipe: " + row.getRecipe());
-                        System.out.println("==============================================");
-                    });
-                }
-            });
-        }
-        */
-
         return new ResultsContainer(allResults);
     }
 

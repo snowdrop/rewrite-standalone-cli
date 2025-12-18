@@ -19,7 +19,9 @@ import dev.snowdrop.openrewrite.cli.model.Config;
 import dev.snowdrop.openrewrite.cli.model.ResultsContainer;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import jakarta.inject.Inject;
+import org.openrewrite.DataTable;
 import org.openrewrite.RecipeRun;
+import org.openrewrite.table.SearchResults;
 import picocli.CommandLine;
 
 import java.nio.file.Path;
@@ -129,8 +131,24 @@ public class RewriteCommand implements Runnable {
 
             runs.forEach((k,v) -> {
                 if (!v.getDataTables().isEmpty()) {
-                    // TODO: To be extended with SharedResults and log a better response here!
                     System.out.printf("Execution of the recipe %s succeeded\n",k);
+                    // The DataTable<SearchResult> will be available starting from: 8.69.0 !
+
+                    Map<DataTable<?>, List<?>> searchResults = v.getDataTables();
+                    if (searchResults != null) {
+                        searchResults.forEach((result, list) -> {
+                            if (result.getClass().getSimpleName().startsWith("SearchResults")) {
+                                System.out.println("# Found " + list.size() + " search results.");
+                                list.stream().forEach(r -> {
+                                    var row = (SearchResults.Row)r;
+                                    System.out.println("# SourcePath: " + row.getSourcePath());
+                                    System.out.println("# Result: " + row.getResult());
+                                    System.out.println("# Recipe: " + row.getRecipe());
+                                    System.out.println("==============================================");
+                                });
+                            }
+                        });
+                    }
                 }
             });
             System.out.println("Finished OpenRewrite ...");

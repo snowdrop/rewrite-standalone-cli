@@ -50,7 +50,7 @@ public interface RewriteConfiguration {
      * Whether to export datatables to CSV files.
      * Can be overridden with REWRITE_EXPORT_DATATABLES environment variable.
      */
-    @WithDefault("false")
+    @WithDefault("true")
     boolean exportDatatables();
 
     /**

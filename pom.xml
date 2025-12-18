@@ -26,7 +26,7 @@
         <quarkus.platform.version>3.29.4</quarkus.platform.version>
 
         <openrewrite-recipe-bom.version>3.15.0</openrewrite-recipe-bom.version>
-        <openrewrite-bom.version>8.68.0</openrewrite-bom.version> <!-- 8.69.0-SNAPSHOT -->
+        <openrewrite-bom.version>8.69.0</openrewrite-bom.version>
 
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
