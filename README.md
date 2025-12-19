@@ -1,4 +1,4 @@
-[![GitHub Actions Status](<https://img.shields.io/github/actions/workflow/status/snowdrop/rewrite-standalone-cli/mvn-build.yml?branch=main&logo=GitHub&style=for-the-badge>)](https://github.com/snowdrop/rewrite-standalone-cli/actions/workflows/mvn-build.yml)
+[![GitHub Actions Status](<https://img.shields.io/github/actions/workflow/status/snowdrop/rewrite-standalone-cli/mvn-build.yml?branch=main&logo=GitHub&style=for-the-badge>)](https://github.com/snowdrop/rewrite-standalone-cli/actions/workflows/mvn-test.yml)
 [![License](https://img.shields.io/github/license/snowdrop/rewrite-standalone-cli?style=for-the-badge&logo=apache)](https://www.apache.org/licenses/LICENSE-2.0)
 
 
