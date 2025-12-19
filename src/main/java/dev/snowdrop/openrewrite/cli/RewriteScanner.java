@@ -23,6 +23,7 @@ import org.openrewrite.marker.Marker;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.marker.OperatingSystemProvenance;
 import org.openrewrite.marker.ci.BuildEnvironment;
+import org.openrewrite.maven.MavenParser;
 import org.openrewrite.polyglot.OmniParser;
 import org.openrewrite.quark.Quark;
 import org.openrewrite.remote.Remote;
@@ -335,6 +336,13 @@ public class RewriteScanner {
             sourceFiles.addAll(kotlinParser.parse(kotlinFiles, config.getAppPath(), ctx).toList());
             System.out.println("Parsed " + kotlinFiles.size() + " Kotlin files");
         }
+
+        List<Path> poms = findFiles(config.getAppPath(), ".xml");
+        MavenParser.Builder mavenParserBuilder = MavenParser.builder();
+        List<SourceFile> mavens = mavenParserBuilder.build()
+            .parse(poms, config.getAppPath(), ctx)
+            .toList();
+        sourceFiles.addAll(mavens);
 
         // Parse other files (XML, YAML, properties, etc.)
         Set<String> masks = config.getPlainTextMasks().isEmpty() ? getDefaultPlainTextMasks() : config.getPlainTextMasks();
