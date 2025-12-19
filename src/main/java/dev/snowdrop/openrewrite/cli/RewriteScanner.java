@@ -73,7 +73,7 @@ public class RewriteScanner {
 
     public ResultsContainer run() throws Exception {
         ResultsContainer results = listResults();
-        if(config.isLogMessages()) {
+        if(config.isDryRun()) {
             createPatchFile(results);
         }
         return results;

@@ -18,6 +18,6 @@ public class BaseTest {
         cfg.setExclusions(Set.of());
         cfg.setPlainTextMasks(Set.of());
         cfg.setAdditionalJarPaths(List.of());
-        cfg.setLogMessages(true);
+        cfg.setDryRun(true);
     }
 }
