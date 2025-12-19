@@ -16,9 +16,48 @@ This project support to execute Openrewrite Recipe(s) without the need to use th
 - JDK 21 
 - Apache maven 3.9
 
-## Instructions
+## Instructions 
 
-Git clone this project compile the project. Next launch the Quarkus Picocli client using the command: `mvn quarkus:dev`
+### To use the Rewrite scanner
+
+Git clone this project and compile the project. When done, the project can be now be used in your own java project if you import the following dependency
+```xml
+    <groupId>io.snowdrop.openrewrite</groupId>
+    <artifactId>rewrite-standalone-cli</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+```
+Next configure the `RewriteScanner` to issue a scan of a java application as described hereafter
+```java
+Config cfg = new Config();
+cfg.setAppPath(Paths.get("<PATH_TO_JAVA_PROJECT>"));
+cfg.setActiveRecipes(List.of("FQNAME_OF_THE_RECIPE"));
+cfg.setRecipeOptions(Set.of("annotationPattern=@org.springframework.boot.autoconfigure.SpringBootApplication,matchMetaAnnotations=false"));
+
+RewriteScanner scanner = new RewriteScanner(cfg);
+scanner.init();
+ResultsContainer results = scanner.run();
+
+// Use the results object to access the Datatables, Changeset, etc
+RecipeRun run = results.getRecipeRuns().get("FQNAME_OF_THE_RECIPE");
+Optional<Map.Entry<DataTable<?>, List<?>>> resultMap = run.getDataTables().entrySet().stream()
+    .filter(entry -> entry.getKey().getName().contains("SearchResults"))
+    .findFirst();
+assertTrue(resultMap.isPresent());
+
+List<?> rows = resultMap.get().getValue();
+assertEquals(1, rows.size());
+
+SearchResults.Row record = (SearchResults.Row)rows.getFirst();
+assertEquals("src/main/java/com/todo/app/AppApplication.java",record.getSourcePath());
+assertEquals("@SpringBootApplication",record.getResult());
+assertEquals("Find annotations `@org.springframework.boot.autoconfigure.SpringBootApplication,matchMetaAnnotations=false`",record.getRecipe());
+
+
+```
+
+### To use the client
+
+Git clone this project and compile the project. Next launch the Quarkus Picocli client using the command: `mvn quarkus:dev`
 
 ```shell
 mvn clean install
