@@ -106,10 +106,10 @@ public class RewriteCommand implements Runnable {
     int sizeThresholdMb = 10;
 
     @CommandLine.Option(
-        names = {"-D"},
-        description = "Log the rewrite messages post execution of the recipes"
+        names = {"-d","--dry-run"},
+        description = "Execute the recipes in dry run mode"
     )
-    boolean logMessages = false;
+    boolean dryRun = false;
 
     // Inject Quarkus configuration properties
     @Inject
@@ -182,7 +182,7 @@ public class RewriteCommand implements Runnable {
         cfg.setExportDatatables(exportDatatables);
         cfg.setExclusions(exclusions);
         cfg.setPlainTextMasks(plainTextMasks);
-        cfg.setLogMessages(logMessages);
+        cfg.setDryRun(dryRun);
 
         return runScanner(cfg);
     }

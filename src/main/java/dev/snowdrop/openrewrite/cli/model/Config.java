@@ -14,7 +14,7 @@ public class Config {
     private Set<String> exclusions;
     private Set<String> plainTextMasks;
     private Set<String> recipeOptions;
-    private boolean logMessages;
+    private boolean dryRun;
 
     public Path getAppPath() {
         return appPath;
@@ -92,11 +92,11 @@ public class Config {
         return exportDatatables;
     }
 
-    public boolean isLogMessages() {
-        return logMessages;
+    public boolean isDryRun() {
+        return dryRun;
     }
 
-    public void setLogMessages(boolean logMessages) {
-        this.logMessages = logMessages;
+    public void setDryRun(boolean dryRun) {
+        this.dryRun = dryRun;
     }
 }
