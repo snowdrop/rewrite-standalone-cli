@@ -25,7 +25,7 @@
 
         <!-- These two should be kept in lockstep (MIMA 2.4.42 = Maven 3.9.14 + Resolver 1.9.27) -->
         <mima.version>2.4.42</mima.version>
-        <maven.version>3.9.14-01</maven.version>
+        <maven.version>3.9.16-01</maven.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
