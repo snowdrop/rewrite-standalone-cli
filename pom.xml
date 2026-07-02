@@ -34,7 +34,7 @@
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.32.3</quarkus.platform.version>
 
-        <openrewrite-bom.version>8.79.4</openrewrite-bom.version>
+        <openrewrite-bom.version>8.86.0</openrewrite-bom.version>
         <openrewrite-rewrite-polyglot.version>2.10.1</openrewrite-rewrite-polyglot.version>
 
         <aesh.version>3.5</aesh.version>
